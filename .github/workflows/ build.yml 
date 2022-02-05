@@ -32,3 +32,4 @@ jobs:
         name: windows_x64
         path: |
           ./${{env.BUILD_CONFIGURATION}}/*.*
+          

@@ -1,0 +1,35 @@
+name: Main
+
+on:
+  push:
+    branches: [master, main]
+
+env:
+  SOLUTION_FILE_PATH: .
+  BUILD_CONFIGURATION: Debug
+
+jobs:
+  Debug:
+    strategy:
+      matrix:
+        platform: [x64]
+        
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1.0.2
+
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} /p:Platform=${{ matrix.platform }} ${{env.SOLUTION_FILE_PATH}}
+      
+    - name: Upload dll
+      uses: actions/upload-artifact@v2
+      with:
+        name: windows_x64
+        path: |
+          ./${{env.BUILD_CONFIGURATION}}/*.*
+          

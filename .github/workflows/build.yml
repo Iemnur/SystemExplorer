@@ -35,5 +35,5 @@ jobs:
       with:
         name: windows_${{ matrix.platform }}
         path: |
-          ./${{env.BUILD_CONFIGURATION}}/${{ matrix.platform }}/*.*
+          ./${{ matrix.platform }}/${{env.BUILD_CONFIGURATION}}/*.*
           

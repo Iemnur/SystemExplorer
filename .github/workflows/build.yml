@@ -22,11 +22,15 @@ jobs:
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v1.0.2
 
+    - name: Restore NuGet packages
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: nuget restore ${{env.SOLUTION_FILE_PATH}}
+
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} /p:Platform=${{ matrix.platform }} ${{env.SOLUTION_FILE_PATH}}
       
-    - name: Upload dll
+    - name: Upload dist
       uses: actions/upload-artifact@v2
       with:
         name: windows_x64

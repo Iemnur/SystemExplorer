@@ -28,25 +28,25 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -252,6 +252,7 @@
     <ClCompile Include="COMView.cpp" />
     <ClCompile Include="DeviceObjectType.cpp" />
     <ClCompile Include="EnvironmentDlg.cpp" />
+    <ClCompile Include="IListView.cpp" />
     <ClCompile Include="ImageIconCache.cpp" />
     <ClCompile Include="IniFile.cpp" />
     <ClCompile Include="InstallServiceDlg.cpp" />
@@ -487,6 +488,7 @@
     <Image Include="res\Standby.ico" />
     <Image Include="res\stop.ico" />
     <Image Include="res\symboliclink.ico" />
+    <Image Include="res\SysExp.ico" />
     <Image Include="res\sysinfo.ico" />
     <Image Include="res\table_column-edit.ico" />
     <Image Include="res\table_column_delete.ico" />

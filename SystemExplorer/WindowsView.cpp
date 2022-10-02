@@ -165,7 +165,7 @@ LRESULT CWindowsView::OnComboKeyDown(UINT, WPARAM wParam, LPARAM, BOOL& handled)
 
 void CWindowsView::OnActivate(bool activate) {
 	if (activate) {
-		auto ui = GetFrame()->GetUpdateUI();
+		auto ui = Frame()->GetUpdateUI();
 		ui->UIEnable(ID_EDIT_FIND, TRUE);
 		ui->UIEnable(ID_EDIT_FIND_NEXT, TRUE);
 	}
@@ -195,7 +195,7 @@ void CWindowsView::InitTree() {
 				auto hDesktop = ObjectManager::DupHandle(obj.get(), DESKTOP_ENUMERATE);
 				if (hDesktop) {
 					CString text;
-					for (auto h : ObjectManager::EnumDsktopWindows(hDesktop)) {
+					for (auto h : ObjectManager::EnumDsktopWindows((HDESK)hDesktop)) {
 						InsertWindow(h, (HTREEITEM)root);
 					}
 					::CloseHandle(hDesktop);

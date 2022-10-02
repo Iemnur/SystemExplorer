@@ -1,5 +1,6 @@
 #include <ntifs.h>
 #include <ntddk.h>
+#include <wdmsec.h>
 #include "KObjExp.h"
 
 #define DRIVER_PREFIX "KObjExp"
@@ -7,6 +8,9 @@
 DRIVER_UNLOAD ObjExpUnload;
 
 DRIVER_DISPATCH ObjExpCreateClose, ObjExpDeviceControl;
+//extern POBJECT_TYPE* ExWindowStationObjectType;
+
+extern "C" POBJECT_TYPE ObGetObjectType(PVOID Object);
 
 extern "C" NTSTATUS ZwOpenThread(
 	_Out_ PHANDLE ThreadHandle,
@@ -31,10 +35,15 @@ extern "C" NTSTATUS ObOpenObjectByName(
 	_Inout_opt_ PVOID ParseContext,
 	_Out_ PHANDLE Handle);
 
+extern "C" HANDLE NTAPI __win32kstub_NtUserOpenWindowStation(
+	_In_ POBJECT_ATTRIBUTES attr,
+	_In_ ACCESS_MASK access);
+
 extern "C" NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING) {
 	PDEVICE_OBJECT DeviceObject;
 	UNICODE_STRING devName = RTL_CONSTANT_STRING(L"\\Device\\KObjExp");
-	auto status = IoCreateDevice(DriverObject, 0, &devName, FILE_DEVICE_UNKNOWN, 0, FALSE, &DeviceObject);
+	auto status = IoCreateDeviceSecure(DriverObject, 0, &devName, FILE_DEVICE_UNKNOWN, 0, FALSE,
+		&SDDL_DEVOBJ_SYS_ALL_ADM_ALL, nullptr, &DeviceObject);
 	if (!NT_SUCCESS(status)) {
 		KdPrint((DRIVER_PREFIX "Failed to create device object (0x%X)\n", status));
 		return status;
@@ -76,7 +85,7 @@ NTSTATUS ObjExpCreateClose(PDEVICE_OBJECT, PIRP Irp) {
 				auto path = (UNICODE_STRING*)buffer;
 				auto bs = wcsrchr(path->Buffer, L'\\');
 				NT_ASSERT(bs);
-				if(bs == nullptr || 0 != _wcsicmp(bs, L"\\SysExp.exe"))
+				if(bs == nullptr || (0 != _wcsicmp(bs, L"\\SysExp.exe") && 0 != _wcsicmp(bs, L"\\ObjExp.exe")))
 					status = STATUS_ACCESS_DENIED;
 			}
 			ZwClose(hProcess);
@@ -169,8 +178,12 @@ NTSTATUS ObjExpDeviceControl(PDEVICE_OBJECT, PIRP Irp) {
 			break;
 		}
 
+		//case IOCTL_KOBJEXP_OPEN_WINSTA_BY_NAME:
+		//	ObjectType = *ExWindowStationObjectType;
 		case IOCTL_KOBJEXP_OPEN_EVENT_BY_NAME:
 			ObjectType = *ExEventObjectType;
+		case IOCTL_KOBJEXP_OPEN_DESKTOP_BY_NAME:
+			ObjectType = *ExDesktopObjectType;
 		case IOCTL_KOBJEXP_OPEN_SEMAPHORE_BY_NAME:
 			if (ObjectType == nullptr)
 				ObjectType = *ExSemaphoreObjectType;

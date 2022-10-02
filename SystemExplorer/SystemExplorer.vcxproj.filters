@@ -261,6 +261,9 @@
     <ClCompile Include="ServiceInfoEx.cpp">
       <Filter>Models</Filter>
     </ClCompile>
+    <ClCompile Include="IListView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainFrm.h">
@@ -791,6 +794,9 @@
       <Filter>Resource Files\Icons</Filter>
     </Image>
     <Image Include="res\car.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="res\SysExp.ico">
       <Filter>Resource Files\Icons</Filter>
     </Image>
   </ItemGroup>

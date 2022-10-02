@@ -12,6 +12,7 @@
 #include "ClipboardHelper.h"
 #include "ImageIconCache.h"
 #include <ProcessInfo.h>
+#include "IListView.h"
 
 using namespace WinSys;
 
@@ -35,7 +36,7 @@ void CProcessesView::DoSort(const SortInfo* si) {
 	auto col = si->SortColumn;
 	auto asc = si->SortAscending;
 
-	std::sort(m_Processes.begin(), m_Processes.end(), [=](const auto& p1, const auto& p2) {
+	std::sort(m_Processes.begin(), m_Processes.end(), [&](const auto& p1, const auto& p2) {
 		switch (static_cast<ProcessColumn>(col)) {
 			case ProcessColumn::Name: return SortHelper::SortStrings(p1->GetImageName(), p2->GetImageName(), asc);
 			case ProcessColumn::PackageFullName: return SortHelper::SortStrings(p1->GetPackageFullName(), p2->GetPackageFullName(), asc);
@@ -130,7 +131,7 @@ DWORD CProcessesView::OnSubItemPrePaint(int, LPNMCUSTOMDRAW cd) {
 	auto cm = GetColumnManager(m_List);
 	auto real = static_cast<ProcessColumn>(cm->GetRealColumn(sub));
 	if ((cm->GetColumn((int)real).Flags & ColumnFlags::Numeric) == ColumnFlags::Numeric)
-		::SelectObject(cd->hdc, GetFrame()->GetMonoFont());
+		::SelectObject(cd->hdc, Frame()->GetMonoFont());
 	else
 		::SelectObject(cd->hdc, m_hFont);
 
@@ -170,7 +171,8 @@ LRESULT CProcessesView::OnCreate(UINT, WPARAM, LPARAM, BOOL& bHandled) {
 
 	m_hWndClient = m_List.Create(m_hWnd, rcDefault, nullptr, ListViewDefaultStyle);// &~LVS_SHAREIMAGELISTS);
 	m_List.SetExtendedListViewStyle(LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER | LVS_EX_LABELTIP | LVS_EX_HEADERDRAGDROP);
-
+	m_spList = ListViewHelper::GetIListView(m_List);
+	ATLASSERT(m_spList);
 	m_List.SetImageList(ImageIconCache::Get().GetImageList(), LVSIL_SMALL);
 
 	auto cm = GetColumnManager(m_List);
@@ -247,7 +249,7 @@ void CProcessesView::Refresh() {
 	auto count = (int)m_ProcMgr.EnumProcesses();
 	if (first) {
 		m_Processes = m_ProcMgr.GetProcesses();
-		m_List.SetItemCount(count);
+		m_spList->SetItemCount(count, 0);
 		return;
 	}
 
@@ -283,17 +285,20 @@ void CProcessesView::Refresh() {
 	}
 
 	auto si = GetSortInfo(m_List);
-	if (!m_ProcMgr.GetNewProcesses().empty() || (si && ((GetColumnManager(m_List)->GetColumn(si->SortColumn).Flags & ColumnFlags::Const) != ColumnFlags::Const)))
-		DoSort(si);
-	m_List.SetItemCountEx(count, LVSICF_NOSCROLL | LVSICF_NOINVALIDATEALL);
-	auto top = m_List.GetTopIndex();
-	m_List.RedrawItems(top, top + m_List.GetCountPerPage());
+	m_spList->SetItemCount(count, LVSICF_NOSCROLL | LVSICF_NOINVALIDATEALL);
+	if (si && !m_ProcMgr.GetNewProcesses().empty() || (si && ((GetColumnManager(m_List)->GetColumn(si->SortColumn).Flags & ColumnFlags::Const) != ColumnFlags::Const)))
+		Sort(si);
+	int top, page;
+	m_spList->GetTopIndex(&top);
+	m_spList->GetCountPerPage(&page);
+	m_spList->RedrawItems(top, top + page);
+	m_List.UpdateWindow();
 }
 
 void CProcessesView::UpdateUI() {
-	int selected = m_List.GetSelectedIndex();
+	int selected = m_spList->GetSelectedIndex();
 
-	auto ui = GetFrame()->GetUpdateUI();
+	auto ui = Frame()->GetUpdateUI();
 	ui->UIEnable(ID_PROCESS_KILL, selected >= 0);
 	ui->UIEnable(ID_PROCESS_KILLBYNAME, selected >= 0);
 	ui->UIEnable(ID_HANDLES_SHOWHANDLEINPROCESS, selected >= 0);
@@ -422,7 +427,7 @@ LRESULT CProcessesView::OnListRightClick(int, LPNMHDR hdr, BOOL&) {
 		hSubMenu = menu.GetSubMenu(7);
 		auto cm = GetColumnManager(m_List);
 		m_SelectedHeader = cm->GetRealColumn(index);
-		GetFrame()->GetUpdateUI()->UIEnable(ID_HEADER_HIDECOLUMN,
+		Frame()->GetUpdateUI()->UIEnable(ID_HEADER_HIDECOLUMN,
 			(cm->GetColumn(m_SelectedHeader).Flags & ColumnFlags::Mandatory) == ColumnFlags::None);
 		pt = pt2;
 	}
@@ -437,9 +442,9 @@ LRESULT CProcessesView::OnListRightClick(int, LPNMHDR hdr, BOOL&) {
 	}
 	if (hSubMenu) {
 		UpdateUI();
-		auto id = (UINT)GetFrame()->TrackPopupMenu(hSubMenu, *this, &pt, TPM_RETURNCMD);
+		auto id = (UINT)Frame()->TrackPopupMenu(hSubMenu, *this, &pt, TPM_RETURNCMD);
 		if (id) {
-			GetFrame()->SendFrameMessage(WM_COMMAND, id, headerClick ? 0 : reinterpret_cast<LPARAM>(m_Processes[index].get()));
+			Frame()->SendFrameMessage(WM_COMMAND, id, headerClick ? 0 : reinterpret_cast<LPARAM>(m_Processes[index].get()));
 		}
 	}
 	if (!paused)
@@ -448,7 +453,7 @@ LRESULT CProcessesView::OnListRightClick(int, LPNMHDR hdr, BOOL&) {
 }
 
 void CProcessesView::OnPauseResume(bool paused) {
-	GetFrame()->GetUpdateUI()->UISetCheck(ID_VIEW_PAUSE, IsPaused());
+	Frame()->GetUpdateUI()->UISetCheck(ID_VIEW_PAUSE, IsPaused());
 }
 
 LRESULT CProcessesView::OnProcessKill(WORD, WORD, HWND, BOOL&) {
@@ -511,7 +516,7 @@ LRESULT CProcessesView::OnPriorityClass(WORD, WORD id, HWND, BOOL&) {
 }
 
 LRESULT CProcessesView::OnProcessItem(WORD, WORD id, HWND, BOOL&) {
-	return GetFrame()->SendFrameMessage(WM_COMMAND, id, reinterpret_cast<LPARAM>(m_Processes[m_List.GetSelectedIndex()].get()));
+	return Frame()->SendFrameMessage(WM_COMMAND, id, reinterpret_cast<LPARAM>(m_Processes[m_List.GetSelectedIndex()].get()));
 }
 
 LRESULT CProcessesView::OnProperties(WORD, WORD, HWND, BOOL&) {
@@ -523,7 +528,7 @@ LRESULT CProcessesView::OnProperties(WORD, WORD, HWND, BOOL&) {
 }
 
 LRESULT CProcessesView::OnProcessColors(WORD, WORD id, HWND, BOOL&) {
-	GetFrame()->SendFrameMessage(WM_COMMAND, id, 0);
+	Frame()->SendFrameMessage(WM_COMMAND, id, 0);
 	return 0;
 }
 
